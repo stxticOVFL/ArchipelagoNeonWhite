@@ -27,7 +27,7 @@ class MedalCap(Choice):
     option_gold = 3
     option_platinum = 4
     option_dev = 5
-    default = 4
+    default = 3
 
 class ProgressiveChecks(DefaultOnToggle):
     """

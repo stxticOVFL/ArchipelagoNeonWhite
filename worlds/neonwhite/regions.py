@@ -1,126 +1,46 @@
-# Regions are areas in your game that you travel to.
-from typing import TYPE_CHECKING
+from BaseClasses import Region, MultiWorld
+from .locations import NWLocation, neon_white_get_locations, neon_white_levels_checks, neon_white_levels_normal, neon_white_levels_giftless, neon_white_levels_sidequests
+from .options import NeonWhiteOptions
+import itertools
 
-neon_white_regions = [
-    "Movement",
-    "Pummel",
-    "Gunner",
-    "Cascade",
-    "Elevate",
-    "Bounce",
-    "Purify",
-    "Climb",
-    "Fasttrack",
-    "Glass Port",
-    "Take Flight",
-    "Godspeed",
-    "Dasher",
-    "Thrasher",
-    "Outstretched",
-    "Smackdown",
-    "Catwalk",
-    "Fastlane",
-    "Distinguish",
-    "Dancer",
-    "Guardian",
-    "Stomp",
-    "Jumper",
-    "Dash Tower",
-    "Descent",
-    "Driller",
-    "Canals",
-    "Sprint",
-    "Mountain",
-    "Superkinetic",
-    "Arrival",
-    "Forgotten City",
-    "The Clocktower",
-    "Fireball",
-    "Ringer",
-    "Cleaner",
-    "Warehouse",
-    "Boom",
-    "Streets",
-    "Steps",
-    "Demolition",
-    "Arcs",
-    "Apartment",
-    "Hanging Gardens",
-    "Tangled",
-    "Waterworks",
-    "Killswitch",
-    "Falling",
-    "Shocker",
-    "Bouquet",
-    "Prepare",
-    "Triptrack",
-    "Race",
-    "Bubble",
-    "Shield",
-    "Overlook",
-    "Pop",
-    "Minefield",
-    "Mimic",
-    "Trigger",
-    "Greenhouse",
-    "Sweep",
-    "Fuse",
-    "Heaven's Edge",
-    "Zipline",
-    "Swing",
-    "Chute",
-    "Crash",
-    "Ascent",
-    "Straightaway",
-    "Firecracker",
-    "Streak",
-    "Mirror",
-    "Escalation",
-    "Bolt",
-    "Godstreak",
-    "Plunge",
-    "Mayhem",
-    "Barrage",
-    "Estate",
-    "Trapwire",
-    "Ricochet",
-    "Fortress",
-    "Holy Ground",
-    "The Third Temple",
-    "Spree",
-    "Breakthrough",
-    "Glide",
-    "Closer",
-    "Hike",
-    "Switch",
-    "Access",
-    "Congregation",
-    "Sequence",
-    "Marathon",
-    "Sacrifice",
-    "Absolution",
-    "Elevate Traversal I",
-    "Elevate Traversal II",
-    "Purify Traversal",
-    "Godspeed Traversal",
-    "Stomp Traversal",
-    "Fireball Traversal",
-    "Dominion Traversal",
-    "Book of Life Traversal",
-    "Doghouse",
-    "Choker",
-    "Chain",
-    "Hellevator",
-    "Razor",
-    "All Seeing Eye",
-    "Resident Saw I",
-    "Resident Saw II",
-    "Sunset Flip Powerbomb",
-    "Balloon Mountain",
-    "Climbing Gym",
-    "Fisherman Suplex",
-    "STF",
-    "Arena",
-    "Attitude Adjustment",
-    "Rocket"
-]
+def create_regions(player: int, world: MultiWorld, options: NeonWhiteOptions):
+    # 121 levels split into 11 chapters of 11 levels, differing from the base game
+    chapters_list = [
+        "Chapter 1",
+        "Chapter 2",
+        "Chapter 3",
+        "Chapter 4",
+        "Chapter 5",
+        "Chapter 6",
+        "Chapter 7",
+        "Chapter 8",
+        "Chapter 9",
+        "Chapter 10",
+        "Chapter 11"
+    ]
+
+    heaven_regions: list[Region] = [Region("Central Heaven", player, world, None)]
+
+
+    neon_white_locations = neon_white_get_locations()
+
+    # Create regions and add locations
+    for chapter in chapters_list:
+        heaven_regions.append(Region(chapter, player, world, chapter))
+
+    for level in neon_white_levels_normal:
+        check_region = Region(level, player, world, None)
+        for check in neon_white_levels_checks:
+            check_name = level + " " + check
+            new_location = NWLocation(player, check_name, neon_white_locations[check_name], None)
+            check_region.locations.append(new_location)
+        heaven_regions.append(check_region)
+
+    for level in itertools.chain(neon_white_levels_giftless, neon_white_levels_sidequests):
+        check_region = Region(level, player, world, None)
+        check_name = level + " Completion"
+        new_location = NWLocation(player, check_name, neon_white_locations[check_name], None)
+        check_region.locations.append(new_location)
+        heaven_regions.append(check_region)
+
+    world.regions += heaven_regions
