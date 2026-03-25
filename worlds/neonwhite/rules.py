@@ -187,8 +187,14 @@ def can_complete_medal(state: CollectionState, player:int, requirements:list[lis
         if state.has_all(solution, player): return True
     return False
 
+# Mission is zero-indexed
+def get_required_rank_for_mission(total_rank_count: int, mission:int):
+    # Neon rank requirement is kinda-exponential, the gap increasing for each rank
+    # Until the final mission which requires ~90% of the total to be collected
+    return floor(total_rank_count / (12 - mission)) - floor(total_rank_count / 12)
 
-def set_rules(multiworld: MultiWorld, world: World, options: NeonWhiteOptions, neon_ranks: int):
+
+def set_rules(multiworld: MultiWorld, world: World, options: NeonWhiteOptions, total_rank_count:int):
     requirements = import_csv_to_data(options.difficulty)
 
     if not world.ordered_levels:
@@ -208,9 +214,7 @@ def set_rules(multiworld: MultiWorld, world: World, options: NeonWhiteOptions, n
         entrance_name = f"Central Heaven to Chapter {i}"
         central_heaven.connect(chapter_region, entrance_name)
         if i != 1:
-            # Every chapter after the first requires an exponential rank in the form 1.5 ^ (chapter num - 1), rounded down
-            # This is 1, 2, 3, 5 ... 86, 129
-            required_neon_rank_count = floor(pow(1.5, i - 1))
+            required_neon_rank_count = get_required_rank_for_mission(total_rank_count, i)
             add_rule(multiworld.get_entrance(entrance_name, world.player), lambda state: state.has("Neon Rank", world.player, required_neon_rank_count))
 
         # Connect each chapter to the levels they contain

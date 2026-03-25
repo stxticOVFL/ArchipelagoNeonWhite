@@ -1,11 +1,11 @@
 from worlds.AutoWorld import World, WebWorld
 from BaseClasses import Tutorial
 from .items import NWItem, nw_items, get_item_from_category, nw_item_groups
-from .locations import neon_white_get_locations, checks_in_sets_lvl
+from .locations import neon_white_get_locations, checks_in_sets_lvl, neon_white_level_name_internal
 #from .Locations import PTLocation, pt_locations, pt_location_groups
 from .options import NeonWhiteOptions
 from .regions import create_regions
-from .rules import set_rules
+from .rules import set_rules, get_required_rank_for_mission
 from math import floor
 from typing import Any, TextIO
 from worlds.LauncherComponents import Component, components, icon_paths, launch as launch_component, Type
@@ -35,14 +35,16 @@ class NeonWhiteWorld(World):
     options: NeonWhiteOptions
     options_dataclass = NeonWhiteOptions
 
-    item_name_to_id = { name: data.id for name, data in nw_items.items() }
+    item_name_to_id = {name: data.id for name, data in nw_items.items()}
 
     location_name_to_id = neon_white_get_locations()
 
     item_name_groups = nw_item_groups
     location_name_groups = checks_in_sets_lvl
 
-    ordered_levels: list[str] # Post-rando level list, to be split into chapters every 11 levels
+    ordered_levels: list[str]   # Post-rando level list, to be split into missions every 11 levels
+    neon_rank_increments = 0    # Number of neon rank increments exist in the item pool, determines mission requirement.
+
     origin_region_name = "Central Heaven"
 
     web = NeonWhiteWeb()
@@ -65,22 +67,29 @@ class NeonWhiteWorld(World):
         # Add soul cards
         for card in get_item_from_category("Card"):
             neon_white_itempool.append(self.create_item(card))
+            locations_to_fill = locations_to_fill - 1 # Added an item
 
-        # Add neon rank increments
-        for i in range(97): # 97 is the number of neon rank increases in the base game
-            neon_white_itempool.append(self.create_item("Neon Rank"))
-
-        # Add filler -- TODO
-
-        # if there's still slots left over from rounding fill them with miracle katanas
         for i in range(locations_to_fill - len(neon_white_itempool)):
-            neon_white_itempool.append(self.create_item("Miracle Katana"))
+            # 1/100 items added for filler will be a miracle katana, the rest will be neon rank increments
+            if self.multiworld.random.randint(0, 99) == 0:
+                neon_white_itempool.append(self.create_item("Miracle Katana"))
+            else:
+                neon_white_itempool.append(self.create_item("Neon Rank"))
+                self.neon_rank_increments = self.neon_rank_increments + 1
 
         self.multiworld.itempool += neon_white_itempool
 
     def set_rules(self):
-        set_rules(self.multiworld, self, self.options, self.toppin_number, self.pumpkin_number)
-        self.multiworld.completion_condition[self.player] = lambda state: state.can_reach("The Crumbling Tower of Pizza Complete", "Location", self.player)
+        set_rules(self.multiworld, self, self.options, self.neon_rank_increments)
+        self.multiworld.completion_condition[self.player] = lambda state: state.can_reach(
+            "Absolution Completion", "Location", self.player)
 
     def get_filler_item_name(self) -> str:
         return "Miracle Katana"
+
+    def fill_slot_data(self):
+        return {
+            "level_order": {neon_white_level_name_internal(level) for level in self.ordered_levels},
+            "rank_increments": int(self.neon_rank_increments),
+            "mission_costs": { get_required_rank_for_mission(self.neon_rank_increments, i) for i in range(12) }
+        }
