@@ -9,8 +9,8 @@ from worlds.AutoWorld import World
 from worlds.generic.Rules import set_rule, add_rule
 from worlds.neonwhite import NeonWhiteOptions
 from worlds.neonwhite.locations import neon_white_levels_giftless, neon_white_levels_normal, \
-    neon_white_levels_sidequests
-from .items import get_items_from_category
+    neon_white_levels_sidequests, neon_white_levels_medals
+from worlds.neonwhite.options import MedalCap
 
 
 class Difficulty(IntEnum):
@@ -26,6 +26,15 @@ class Medal(IntEnum):
     Ace = 3
     Dev = 4
     Gift = 5
+
+def medal_from_medal_cap(medal_cap: MedalCap) -> Medal:
+    match medal_cap:
+        case 1: return Medal.Bronze
+        case 2: return Medal.Silver
+        case 3: return Medal.Gold
+        case 4: return Medal.Ace
+        case 5: return Medal.Dev
+        case _: return Medal.Bronze
 
 
 class LevelRequirements(IntFlag):
@@ -173,6 +182,7 @@ def level_rando(world: World, requirements: LevelRequirementSet) -> list[str]:
     # Place 2 levels where the gift and gold medal can be obtained Fist-Only at the very start
     fist_only_levels = []
     for level in level_queue:
+        if level not in neon_white_levels_normal: continue
         if requirements.can_complete_level(level, Medal.Gold, LevelRequirements.FistOnly) and requirements.can_complete_level(level, Medal.Gift, LevelRequirements.FistOnly):
             fist_only_levels.append(level)
     world.random.shuffle(fist_only_levels)
@@ -195,7 +205,8 @@ def can_complete_medal(state: CollectionState, player:int, requirements:list[lis
 # Mission is zero-indexed
 def get_required_rank_for_mission(total_rank_count: int, mission:int) -> int:
     # TODO: Figure out a nice formula, for now to fix fill issues just make it super easy
-    return mission
+    # return mission * 4
+    return floor((total_rank_count * 0.7 * (mission - 1)) / (12 * 8))
     # Neon rank requirement is exponential, requiring a tiny number of neon ranks for the first missions but quickly increasing
     mission_fraction = mission / 11
     lenience_value = 10
@@ -205,6 +216,8 @@ def get_required_rank_for_mission(total_rank_count: int, mission:int) -> int:
 def set_rules(multiworld: MultiWorld, world: World, options: NeonWhiteOptions, total_rank_count:int):
     requirements = import_csv_to_data(options.difficulty)
 
+    medal_cap_typed = medal_from_medal_cap(options.medal_cap)
+
     if not world.ordered_levels:
         world.ordered_levels = level_rando(world, requirements)
 
@@ -212,7 +225,7 @@ def set_rules(multiworld: MultiWorld, world: World, options: NeonWhiteOptions, t
     # TODO find a nice balance, temporarily use all to make generation easy
     relevant_discards: set[str] = set()
     for i in range(12):
-        for solution in itertools.chain(requirements.get_necessary_items(world.ordered_levels[i], Medal.Gold), requirements.get_necessary_items(world.ordered_levels[i], Medal.Gift)):
+        for solution in itertools.chain(requirements.get_necessary_items(world.ordered_levels[i], medal_cap_typed), requirements.get_necessary_items(world.ordered_levels[i], Medal.Gift)):
             for card in solution:
                 if "Discard" in card or "Book of Life" in card:
                     relevant_discards.add(card)
@@ -236,12 +249,14 @@ def set_rules(multiworld: MultiWorld, world: World, options: NeonWhiteOptions, t
             level_name = world.ordered_levels[((i - 1) * 11) + j]
             mission_region.connect(multiworld.get_region(level_name, world.player), f"{mission_region.name} to {level_name}")
             if level_name in neon_white_levels_normal:
-                set_rule(multiworld.get_location(level_name + " Completion", world.player), lambda state: can_complete_medal(state, world.player, requirements.get_necessary_items(level_name, Medal.Gold)))
+                for medal in range(options.medal_cap):
+                    set_rule(multiworld.get_location(level_name + " " + neon_white_levels_medals[medal] + " Completion", world.player), lambda state: can_complete_medal(state, world.player, requirements.get_necessary_items(level_name, medal_from_medal_cap(MedalCap(medal)))))
                 set_rule(multiworld.get_location(level_name + " Gift", world.player), lambda state: can_complete_medal(state, world.player, requirements.get_necessary_items(level_name, Medal.Gift)))
+            elif level_name in neon_white_levels_giftless:
+                for medal in range(options.medal_cap):
+                    set_rule(multiworld.get_location(level_name + " " + neon_white_levels_medals[medal] + " Completion", world.player), lambda state: can_complete_medal(state, world.player, requirements.get_necessary_items(level_name, medal_from_medal_cap(MedalCap(medal)))))
             else:
                 set_rule(multiworld.get_location(level_name + " Completion", world.player), lambda state: can_complete_medal(state, world.player, requirements.get_necessary_items(level_name, Medal.Dev)))
-
-    multiworld.completion_condition[world.player] = lambda state: state.has("Absolution Completion", world.player)
 
     from Utils import visualize_regions
     visualize_regions(central_heaven, "neon_white_regions.puml")

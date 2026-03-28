@@ -140,11 +140,13 @@ neon_white_levels_sidequests = [  # No gifts either
     "Rocket"
 ]
 
-neon_white_levels_checks = [
-    "Completion",
-    "Gift"
+neon_white_levels_medals = [
+    "Bronze",
+    "Silver",
+    "Gold",
+    "Ace",
+    "Dev"
 ]
-
 
 def neon_white_level_name_internal(level: str) -> str:
     match level:
@@ -275,13 +277,21 @@ def neon_white_level_name_internal(level: str) -> str:
 def neon_white_get_locations() -> dict[str, int]:
     locations_dict: dict[str, int] = {}
     level_id = 500
-    for level in neon_white_levels_normal:
-        locations_dict[level + " Completion"] = level_id
+
+    for normal_level in neon_white_levels_normal:
+        for medal in neon_white_levels_medals:
+            locations_dict[normal_level + " " + medal + " Completion"] = level_id
+            level_id += 1
+        locations_dict[normal_level + " Gift"] = level_id
         level_id += 1
-        locations_dict[level + " Gift"] = level_id
-        level_id += 1
-    for level in itertools.chain(neon_white_levels_giftless, neon_white_levels_sidequests):
-        locations_dict[level + " Completion"] = level_id
+
+    for normal_level in neon_white_levels_giftless:
+        for medal in neon_white_levels_medals:
+            locations_dict[normal_level + " " + medal + " Completion"] = level_id
+            level_id += 1
+
+    for normal_level in neon_white_levels_sidequests:
+        locations_dict[normal_level + " Completion"] = level_id
         level_id += 1
 
     return locations_dict
@@ -289,10 +299,18 @@ def neon_white_get_locations() -> dict[str, int]:
 
 checks_in_sets_lvl = {
                          lvl: {
-                             lvl + " " + check for check in neon_white_levels_checks
+                             lvl + " " + medal + " Completion" for medal in neon_white_levels_medals
                          } for lvl in neon_white_levels_normal
                      } | {
                          lvl: {
+                             lvl + " Gift"
+                         } for lvl in neon_white_levels_normal
+                     } | {
+                         lvl: {
+                             lvl + " " + medal + " Completion" for medal in neon_white_levels_medals
+                         } for lvl in neon_white_levels_giftless
+                     } | {
+                         lvl: {
                              lvl + " Completion"
-                         } for lvl in itertools.chain(neon_white_levels_giftless, neon_white_levels_sidequests)
+                         } for lvl in neon_white_levels_sidequests
                      }

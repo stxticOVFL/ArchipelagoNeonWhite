@@ -9,7 +9,6 @@ from .rules import set_rules, get_required_rank_for_mission
 from math import floor
 from typing import Any, TextIO
 from worlds.LauncherComponents import Component, components, icon_paths, launch as launch_component, Type
-nw_base_id = 7307000
 
 class NeonWhiteWeb(WebWorld):
     tutorials = [Tutorial(
@@ -84,7 +83,7 @@ class NeonWhiteWorld(World):
     def set_rules(self):
         set_rules(self.multiworld, self, self.options, self.neon_rank_increments)
         self.multiworld.completion_condition[self.player] = lambda state: state.can_reach(
-            "Absolution Completion", "Location", self.player)
+            "Absolution Ace Completion", "Location", self.player)
 
     def get_filler_item_name(self) -> str:
         return "Miracle Katana"
@@ -93,5 +92,5 @@ class NeonWhiteWorld(World):
         return {
             "level_order": [neon_white_level_name_internal(level) for level in self.ordered_levels],
             "rank_increments": int(self.neon_rank_increments),
-            "mission_costs": [get_required_rank_for_mission(self.neon_rank_increments, i) for i in range(12)]
+            "mission_costs": [get_required_rank_for_mission(self.neon_rank_increments, i) for i in range(1, 12)]
         }

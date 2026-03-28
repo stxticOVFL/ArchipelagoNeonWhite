@@ -25,7 +25,7 @@ class MedalCap(Choice):
     option_bronze = 1
     option_silver = 2
     option_gold = 3
-    option_platinum = 4
+    option_ace = 4
     option_dev = 5
     default = 3
 

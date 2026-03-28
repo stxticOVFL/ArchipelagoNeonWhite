@@ -1,6 +1,6 @@
 from BaseClasses import Region, MultiWorld
-from .locations import NWLocation, neon_white_get_locations, neon_white_levels_checks, neon_white_levels_normal, \
-    neon_white_levels_giftless, neon_white_levels_sidequests, NWLocation
+from .locations import NWLocation, neon_white_get_locations, neon_white_levels_normal, \
+    neon_white_levels_giftless, neon_white_levels_sidequests, NWLocation, neon_white_levels_medals
 from .options import NeonWhiteOptions
 import itertools
 
@@ -31,13 +31,24 @@ def create_regions(player: int, multiworld: MultiWorld, options: NeonWhiteOption
 
     for level in neon_white_levels_normal:
         check_region = Region(level, player, multiworld, None)
-        for check in neon_white_levels_checks:
-            check_name = level + " " + check
+        for medal in range(options.medal_cap):
+            check_name = level + " " + neon_white_levels_medals[medal] + " Completion"
+            new_location = NWLocation(player, check_name, neon_white_locations[check_name], check_region)
+            check_region.locations.append(new_location)
+        check_name = level + " Gift"
+        new_location = NWLocation(player, check_name, neon_white_locations[check_name], check_region)
+        check_region.locations.append(new_location)
+        heaven_regions.append(check_region)
+
+    for level in neon_white_levels_giftless:
+        check_region = Region(level, player, multiworld, None)
+        for medal in range(options.medal_cap):
+            check_name = level + " " + neon_white_levels_medals[medal] + " Completion"
             new_location = NWLocation(player, check_name, neon_white_locations[check_name], check_region)
             check_region.locations.append(new_location)
         heaven_regions.append(check_region)
 
-    for level in itertools.chain(neon_white_levels_giftless, neon_white_levels_sidequests):
+    for level in neon_white_levels_sidequests:
         check_region = Region(level, player, multiworld, None)
         check_name = level + " Completion"
         new_location = NWLocation(player, check_name, neon_white_locations[check_name], check_region)
