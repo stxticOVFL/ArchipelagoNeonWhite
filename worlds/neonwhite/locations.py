@@ -211,7 +211,7 @@ def neon_white_level_name_internal(level: str) -> str:
         case "Greenhouse": return "GRID_SWARM"
         case "Sweep": return "GRID_SWITCH"
         case "Fuse": return "GRID_TRAPS2"
-        case "Heavens Edge": return "TUT_ROCKETJUMP"
+        case "Heaven's Edge": return "TUT_ROCKETJUMP"
         case "Zipline": return "TUT_ZIPLINE"
         case "Swing": return "GRID_CLIMBANG"
         case "Chute": return "GRID_ROCKETUZI"

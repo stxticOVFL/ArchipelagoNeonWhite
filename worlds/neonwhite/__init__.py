@@ -91,7 +91,7 @@ class NeonWhiteWorld(World):
 
     def fill_slot_data(self):
         return {
-            "level_order": {neon_white_level_name_internal(level) for level in self.ordered_levels},
+            "level_order": [neon_white_level_name_internal(level) for level in self.ordered_levels],
             "rank_increments": int(self.neon_rank_increments),
-            "mission_costs": { get_required_rank_for_mission(self.neon_rank_increments, i) for i in range(12) }
+            "mission_costs": [get_required_rank_for_mission(self.neon_rank_increments, i) for i in range(12)]
         }
