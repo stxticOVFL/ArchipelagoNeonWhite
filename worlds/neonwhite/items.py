@@ -1,5 +1,5 @@
 from BaseClasses import Item, ItemClassification
-from typing import NamedTuple
+from typing import Iterable, NamedTuple
 
 class NWItem(Item):
     game: str = "Neon White"
@@ -9,12 +9,10 @@ class NWItemData(NamedTuple):
     id: int
     classification: ItemClassification
 
-def get_items_from_category(category: str) -> list[str]:
-    itemlist = []
-    for item in nw_items:
-        if nw_items[item].category == category:
-            itemlist.append(item)
-    return itemlist
+def get_items_from_category(category: str) -> Iterable[str]:
+    for name, item in nw_items.items():
+        if item.category == category:
+            yield name
 
 nw_items: dict[str, NWItemData] = {
     "Neon Rank":            NWItemData("Progression", 501, ItemClassification.progression_skip_balancing),

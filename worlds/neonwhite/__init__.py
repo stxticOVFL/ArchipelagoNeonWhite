@@ -42,7 +42,7 @@ class NeonWhiteWorld(World):
     location_name_groups = checks_in_sets_lvl
 
     ordered_levels: list[str]   # Post-rando level list, to be split into missions every 11 levels
-    neon_rank_increments = 0    # Number of neon rank increments exist in the item pool, determines mission requirement.
+    neon_rank_increments = 100    # Number of neon rank increments exist in the item pool, determines mission requirement
 
     origin_region_name = "Central Heaven"
 
@@ -61,32 +61,34 @@ class NeonWhiteWorld(World):
         create_regions(self.player, self.multiworld, self.options)
 
     def create_items(self):
-        neon_white_itempool = []
+        itempool = []
 
-        locations_to_fill = len(self.multiworld.get_unfilled_locations(self.player))
+        loc_count = len(self.get_locations())
 
         # Add soul cards
         for card in get_items_from_category("Card"):
-            neon_white_itempool.append(self.create_item(card))
-            locations_to_fill = locations_to_fill - 1 # Added an item
+            itempool.append(self.create_item(card))
 
-        for i in range(locations_to_fill):
-            # 1/100 items added for filler will be a miracle katana, the rest will be neon rank increments
-            if i + 1 % 100 == 0:
-                neon_white_itempool.append(self.create_item("Miracle Katana"))
-            else:
-                neon_white_itempool.append(self.create_item("Neon Rank"))
-                self.neon_rank_increments = self.neon_rank_increments + 1
+        # Make sure we add the neon ranks that we need
+        ranks_needed = get_required_rank_for_mission(self.neon_rank_increments, 11)
+        itempool.extend([self.create_item("Neon Rank")] * ranks_needed)
 
-        self.multiworld.itempool += neon_white_itempool
+        # Fill the rest with filler
+        for _ in range(loc_count - len(itempool)):
+            itempool.append(self.create_item(self.get_filler_item_name()))
+
+        self.multiworld.itempool += itempool
+
+    def get_filler_item_name(self) -> str:
+        # 1/100 items added for filler will be a miracle katana, the rest will be neon rank increments
+        if self.multiworld.random.randint(1, 100) == 100:
+            return "Miracle Katana"
+        return "Neon Rank"
 
     def set_rules(self):
         set_rules(self.multiworld, self, self.options, self.neon_rank_increments)
         self.multiworld.completion_condition[self.player] = lambda state: state.can_reach(
             "Absolution Ace Completion", "Location", self.player)
-
-    def get_filler_item_name(self) -> str:
-        return "Miracle Katana"
 
     def fill_slot_data(self):
         return {
