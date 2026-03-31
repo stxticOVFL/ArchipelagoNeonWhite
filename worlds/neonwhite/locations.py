@@ -148,6 +148,8 @@ neon_white_levels_medals = [
     "Dev"
 ]
 
+# ruff: disable[E701]
+# fmt: off
 def neon_white_level_name_internal(level: str) -> str:
     match level:
         case "Movement": return "TUT_MOVEMENT"
@@ -271,8 +273,9 @@ def neon_white_level_name_internal(level: str) -> str:
         case "Arena": return "SIDEQUEST_ARENASIXNINE"
         case "Attitude Adjustment": return "SIDEQUEST_ATTITUDE_ADJUSTMENT"
         case "Rocket": return "SIDEQUEST_ROCKETGODZ"
-    return None
-
+    return f"MISSING_ID {level}"
+# ruff: enable[E701]
+# fmt: on
 
 def neon_white_get_locations() -> dict[str, int]:
     locations_dict: dict[str, int] = {}
