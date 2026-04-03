@@ -198,7 +198,10 @@ def import_csv_to_data(diff: Difficulty) -> LevelRequirementSet:
             # Copy requirements from all easier difficulties
             # Requirements are checked as a "can beat x with these weapons?" so this works
             for j in range(0, diff):
-                cell = row[(i * 4) + j]
+                # The csv can be cut off prematurely as export to csv wraps when reaching final cell of a row
+                # Causes OOB error for any non-easy difficulty if final entry has empty cols, so clamp index for same result
+                cell_idx = min((i * 4) + j, len(row) - 1)
+                cell = row[cell_idx]
                 # F means fist completable, no requirements
                 if cell == "F":
                     new_requirements.requirements[level_name][medal_idx].add(LevelRequirements.FistOnly)
