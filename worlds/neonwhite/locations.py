@@ -1,8 +1,4 @@
 # Locations are specific points that you would obtain an item at.
-import itertools
-from enum import IntFlag, auto, IntEnum
-import csv
-
 from BaseClasses import Location
 
 

@@ -2,18 +2,24 @@ import csv
 import itertools
 from enum import IntEnum, IntFlag, auto
 from math import floor
+from typing import TYPE_CHECKING
+
+from BaseClasses import MultiWorld
+from rule_builder.rules import False_, Has, HasAll, True_
+from worlds.neonwhite import NeonWhiteOptions
+from worlds.neonwhite.locations import (
+    neon_white_levels_giftless,
+    neon_white_levels_medals,
+    neon_white_levels_normal,
+    neon_white_levels_sidequests,
+)
+from worlds.neonwhite.options import Difficulty, MedalCap
 
 from . import data
-from BaseClasses import MultiWorld, CollectionState
-from worlds.AutoWorld import World
-from worlds.generic.Rules import set_rule, add_rule
-from worlds.neonwhite import NeonWhiteOptions
-from worlds.neonwhite.locations import neon_white_levels_giftless, neon_white_levels_normal, \
-    neon_white_levels_sidequests, neon_white_levels_medals
-from worlds.neonwhite.options import MedalCap, Difficulty
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from rule_builder.rules import Rule
+
     from . import NeonWhiteWorld
 
 class Medal(IntEnum):
@@ -24,6 +30,8 @@ class Medal(IntEnum):
     Dev = 4
     Gift = 5
 
+# ruff: disable[E701]
+# fmt: off
 def medal_from_medal_cap(medal_cap: MedalCap) -> Medal:
     match medal_cap:
         case 1: return Medal.Bronze
@@ -32,7 +40,8 @@ def medal_from_medal_cap(medal_cap: MedalCap) -> Medal:
         case 4: return Medal.Ace
         case 5: return Medal.Dev
         case _: return Medal.Bronze
-
+# ruff: enable[E701]
+# fmt: on
 
 class LevelRequirements(IntFlag):
     FistOnly = 0
@@ -56,9 +65,9 @@ class LevelRequirements(IntFlag):
         if not solo.name:
             return None
         if (solo.name.endswith("Fire")):
-            return solo.name[len("Fire"):] + " - Fire"
+            return solo.name.removesuffix("Fire") + " - Fire"
         if (solo.name.endswith("Discard")):
-            return solo.name[len("Discard"):] + " - Discard"
+            return solo.name.removesuffix("Discard") + " - Discard"
         if solo == LevelRequirements.Katana:
             return "Katana"
         if solo == LevelRequirements.BookOfLife:
@@ -96,7 +105,13 @@ class LevelRequirementSet:
         # String is the level name, list is 0..5, in order: dev,ace,gold,bronze,silver,gift
         self.requirements = dict[str, list[set[LevelRequirements]]]()
         for level in levels:
-            self.requirements[level] = [set[LevelRequirements]()] * 6
+            self.requirements[level] = [
+                set[LevelRequirements](),
+                set[LevelRequirements](),
+                set[LevelRequirements](),
+                set[LevelRequirements](),
+                set[LevelRequirements](),
+                set[LevelRequirements]()]
 
     # Note - Medal 0-4 is dev-bronze, 5 is gift
     # Cards are what is available at that point
@@ -110,15 +125,21 @@ class LevelRequirementSet:
                 return True
         return False
 
-    def get_necessary_items(self, level:str, medal:Medal) -> list[LevelRequirements]:
-        required_cards = list[LevelRequirements]()
-
+    def make_rule(self, level: str, medal: Medal) -> "Rule":
         medal_idx = int(medal) if medal == Medal.Gift else 4 - int(medal)
+        rule = False_()
 
         for solution in self.requirements[level][medal_idx]:
-            required_cards.append(solution)
+            if (solution == LevelRequirements.FistOnly):
+                return True_()
 
-        return required_cards
+            rule |= HasAll(*solution.to_list())
+        return rule
+
+
+    def get_necessary_items(self, level:str, medal:Medal) -> list[LevelRequirements]:
+        medal_idx = int(medal) if medal == Medal.Gift else 4 - int(medal)
+        return list(self.requirements[level][medal_idx])
 
 
 
@@ -194,7 +215,6 @@ def import_csv_to_data(diff: Difficulty) -> LevelRequirementSet:
 # Actual functions related to rules start here
 def level_rando(world: "NeonWhiteWorld", requirements: LevelRequirementSet) -> list[str]:
     # TODO: Make this smarter, e.g. fill levels on a gradient from smallest minimum requirement to most
-    rando_level_order = []
 
     level_queue = neon_white_levels_normal + neon_white_levels_giftless + neon_white_levels_sidequests
     level_queue.remove("Absolution") # This will always be placed at the end
@@ -202,31 +222,25 @@ def level_rando(world: "NeonWhiteWorld", requirements: LevelRequirementSet) -> l
     # Place 2 levels where the gift and gold medal can be obtained Fist-Only at the very start
     fist_only_levels = []
     for level in level_queue:
-        if level not in neon_white_levels_normal: continue
+        if level not in neon_white_levels_normal:
+            continue
         if requirements.can_complete_level(level, Medal.Gold, LevelRequirements.FistOnly) and requirements.can_complete_level(level, Medal.Gift, LevelRequirements.FistOnly):
             fist_only_levels.append(level)
     world.random.shuffle(fist_only_levels)
     for i in range(2):
-        rando_level_order.append(fist_only_levels[i])
         level_queue.remove(fist_only_levels[i])
+    fist_only_levels = fist_only_levels[:2]
 
     # Shuffle the rest, append, then put Absolution at the end
     world.random.shuffle(level_queue)
-    rando_level_order.extend(level_queue)
-    rando_level_order.append("Absolution")
-    return rando_level_order
-
-def current_state_cards(state: CollectionState, player: int) -> "LevelRequirements":
-    items = state.prog_items[player]
-    ret = LevelRequirements.FistOnly
-    for x in items:
-        ret |= LevelRequirements.string_to_solo(x)
+    ret = fist_only_levels + level_queue + ["Absolution"]
+    print(ret)
+    print(len(ret))
     return ret
 
 # Mission is 1-indexed
 def get_required_rank_for_mission(total_rank_count: int, mission:int) -> int:
     # Neon rank requirement is exponential, requiring a tiny number of neon ranks for the first missions but quickly increasing
-
     # total_rank_count /= 10
     mission_fraction = mission / 11
     lenience_value = 10
@@ -255,41 +269,33 @@ def set_rules(multiworld: MultiWorld, world: "NeonWhiteWorld", options: NeonWhit
     for i in range(floor(len(relevant_discards_list) / 1)):
         multiworld.local_early_items[world.player][relevant_discards_list[i]] = 1
 
-    central_heaven = multiworld.get_region("Central Heaven", world.player)
+    central_heaven = world.get_region("Central Heaven")
     # Connect central heaven to every mission
     for i in range(1, 12):
-        mission_region = multiworld.get_region(f"Mission {i}", world.player)
+        mission_region = world.get_region(f"Mission {i}")
         entrance_name = f"Central Heaven to Mission {i}"
         central_heaven.connect(mission_region, entrance_name)
         if i != 1:
-            required_neon_rank_count = get_required_rank_for_mission(total_rank_count, i)
-            add_rule(multiworld.get_entrance(entrance_name, world.player),
-                lambda state, ranks=required_neon_rank_count:
-                    state.has("Neon Rank", world.player, ranks))
+            neonrank_count = get_required_rank_for_mission(total_rank_count, i)
+            world.set_rule(world.get_entrance(entrance_name), Has("Neon Rank", neonrank_count))
 
         # Connect each mission to the levels they contain
         for j in range(11):
             level_name = world.ordered_levels[((i - 1) * 11) + j]
-            mission_region.connect(multiworld.get_region(level_name, world.player), f"{mission_region.name} to {level_name}")
-            if level_name in neon_white_levels_normal:
+            mission_region.connect(multiworld.get_region(level_name, world.player),
+                f"{mission_region.name} to {level_name}")
+            if level_name in neon_white_levels_normal or level_name in neon_white_levels_giftless:
                 for medal in range(options.medal_cap):
-                    set_rule(multiworld.get_location(level_name + " " + neon_white_levels_medals[medal] + " Completion", world.player),
-                        lambda state, lvl=level_name, m=medal:
-                            requirements.can_complete_level(lvl, medal_from_medal_cap(MedalCap(m)), current_state_cards(state, world.player)))
+                    world.set_rule(world.get_location(f"{level_name} {neon_white_levels_medals[medal]} Completion"),
+                        requirements.make_rule(level_name, Medal(medal)))
 
-                set_rule(multiworld.get_location(level_name + " Gift", world.player),
-                    lambda state, lvl=level_name:
-                        requirements.can_complete_level(lvl, Medal.Gift, current_state_cards(state, world.player)))
+                if level_name not in neon_white_levels_giftless:
+                    world.set_rule(world.get_location(level_name + " Gift"),
+                        requirements.make_rule(level_name, Medal.Gift))
 
-            elif level_name in neon_white_levels_giftless:
-                for medal in range(options.medal_cap):
-                    set_rule(multiworld.get_location(level_name + " " + neon_white_levels_medals[medal] + " Completion", world.player),
-                        lambda state, lvl=level_name, m=medal:
-                            requirements.can_complete_level(lvl, medal_from_medal_cap(MedalCap(m)), current_state_cards(state, world.player)))
             else:
-                set_rule(multiworld.get_location(level_name + " Completion", world.player),
-                    lambda state, lvl=level_name:
-                        requirements.can_complete_level(lvl, Medal.Dev, current_state_cards(state, world.player)))
+                world.set_rule(world.get_location(level_name + " Completion"),
+                    requirements.make_rule(level_name, Medal.Dev))
 
     from Utils import visualize_regions
     visualize_regions(central_heaven, "neon_white_regions.puml")

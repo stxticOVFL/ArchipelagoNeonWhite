@@ -1,14 +1,15 @@
-from worlds.AutoWorld import World, WebWorld
 from BaseClasses import Tutorial
-from .items import NWItem, nw_items, get_items_from_category, nw_item_groups
-from .locations import neon_white_get_locations, checks_in_sets_lvl, neon_white_level_name_internal
+from rule_builder.rules import Has, CanReachLocation
+from worlds.AutoWorld import WebWorld, World
+
+from .items import NWItem, get_items_from_category, nw_item_groups, nw_items
+from .locations import checks_in_sets_lvl, neon_white_get_locations, neon_white_level_name_internal
+
 #from .Locations import PTLocation, pt_locations, pt_location_groups
 from .options import NeonWhiteOptions
 from .regions import create_regions
-from .rules import set_rules, get_required_rank_for_mission
-from math import floor
-from typing import Any, TextIO
-from worlds.LauncherComponents import Component, components, icon_paths, launch as launch_component, Type
+from .rules import get_required_rank_for_mission, set_rules
+
 
 class NeonWhiteWeb(WebWorld):
     tutorials = [Tutorial(
@@ -31,7 +32,7 @@ class NeonWhiteWorld(World):
     """
 
     game = "Neon White"
-    options: NeonWhiteOptions
+    options: NeonWhiteOptions  # pyright: ignore[reportIncompatibleVariableOverride]
     options_dataclass = NeonWhiteOptions
 
     item_name_to_id = {name: data.id for name, data in nw_items.items()}
@@ -87,8 +88,7 @@ class NeonWhiteWorld(World):
 
     def set_rules(self):
         set_rules(self.multiworld, self, self.options, self.neon_rank_increments)
-        self.multiworld.completion_condition[self.player] = lambda state: state.can_reach(
-            "Absolution Ace Completion", "Location", self.player)
+        self.set_completion_rule(CanReachLocation("Absolution Ace Completion"))
 
     def fill_slot_data(self):
         return {
