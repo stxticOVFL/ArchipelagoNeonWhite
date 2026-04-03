@@ -1,5 +1,7 @@
-from Options import Choice, DeathLink, DefaultOnToggle, StartInventoryPool, PerGameCommonOptions
 from dataclasses import dataclass
+
+from Options import Choice, DeathLink, DefaultOnToggle, PerGameCommonOptions, StartInventoryPool
+
 
 class Difficulty(Choice):
     """
@@ -43,7 +45,7 @@ class Traps(DefaultOnToggle):
     display_name = "Traps"
 
 class NeonWhiteDeathLink(DeathLink):
-    __doc__ = (DeathLink.__doc__ + "\n\n    You can disable this or set it to give yourself a trap effect when " +
+    __doc__ = (DeathLink.__doc__ + "\n\n    You can disable this or set it to give yourself a trap effect when " +  # pyright: ignore[reportOptionalOperand]
                "another player dies in the in-game mod options.")
 
 

@@ -1,5 +1,8 @@
+from collections.abc import Iterable
+from typing import NamedTuple
+
 from BaseClasses import Item, ItemClassification
-from typing import Iterable, NamedTuple
+
 
 class NWItem(Item):
     game: str = "Neon White"

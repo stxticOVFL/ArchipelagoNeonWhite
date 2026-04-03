@@ -1,8 +1,14 @@
-from BaseClasses import Region, MultiWorld
-from .locations import NWLocation, neon_white_get_locations, neon_white_levels_normal, \
-    neon_white_levels_giftless, neon_white_levels_sidequests, NWLocation, neon_white_levels_medals
+from BaseClasses import MultiWorld, Region
+
+from .locations import (
+    NWLocation,
+    neon_white_get_locations,
+    neon_white_levels_giftless,
+    neon_white_levels_medals,
+    neon_white_levels_normal,
+    neon_white_levels_sidequests,
+)
 from .options import NeonWhiteOptions
-import itertools
 
 
 def create_regions(player: int, multiworld: MultiWorld, options: NeonWhiteOptions):
