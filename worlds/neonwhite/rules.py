@@ -255,20 +255,6 @@ def set_rules(multiworld: MultiWorld, world: "NeonWhiteWorld", options: NeonWhit
     if not world.ordered_levels:
         world.ordered_levels = level_rando(world, requirements)
 
-    # Place half of the relevant discard abilities into the early items pool to alleviate fill errors
-    # TODO find a nice balance, temporarily use all to make generation easy
-    relevant_discards: set[str] = set()
-    for i in range(12):
-        for solution in itertools.chain(requirements.get_necessary_items(world.ordered_levels[i], medal_cap_typed), requirements.get_necessary_items(world.ordered_levels[i], Medal.Gift)):
-            for card in solution:
-                cardstr = LevelRequirements.solo_to_string(card)
-                if cardstr and ("Discard" in cardstr or "Book of Life" in cardstr):
-                    relevant_discards.add(cardstr)
-    relevant_discards_list = list(relevant_discards)
-    world.random.shuffle(relevant_discards_list)
-    for i in range(floor(len(relevant_discards_list) / 1)):
-        multiworld.local_early_items[world.player][relevant_discards_list[i]] = 1
-
     central_heaven = world.get_region("Central Heaven")
     # Connect central heaven to every mission
     for i in range(1, 12):
