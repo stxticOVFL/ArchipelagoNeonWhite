@@ -284,13 +284,13 @@ def neon_white_get_locations() -> dict[str, int]:
         locations_dict[normal_level + " Gift"] = level_id
         level_id += 1
 
-    for normal_level in neon_white_levels_giftless:
+    for giftless_level in neon_white_levels_giftless:
         for medal in neon_white_levels_medals:
-            locations_dict[normal_level + " " + medal + " Completion"] = level_id
+            locations_dict[giftless_level + " " + medal + " Completion"] = level_id
             level_id += 1
 
-    for normal_level in neon_white_levels_sidequests:
-        locations_dict[normal_level + " Completion"] = level_id
+    for sidequest_level in neon_white_levels_sidequests:
+        locations_dict[sidequest_level + " Completion"] = level_id
         level_id += 1
 
     return locations_dict
