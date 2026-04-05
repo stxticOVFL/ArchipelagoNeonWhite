@@ -1,3 +1,5 @@
+from typing import Any
+
 from BaseClasses import Tutorial
 from rule_builder.rules import CanReachLocation
 from worlds.AutoWorld import WebWorld, World
@@ -90,6 +92,14 @@ class NeonWhiteWorld(World):
         return "Neon Rank"
 
     def set_rules(self):
+        ut_regen = getattr(self.multiworld, "re_gen_passthrough", {})
+        if (self.game in ut_regen):
+            ut_regen = ut_regen[self.game]
+            self.ordered_levels = ut_regen["levels"]
+            self.rank_requirement = ut_regen["options"]["rank_requirement"]
+            self.mission_count = ut_regen["options"]["mission_count"]
+
+
         set_rules(self.multiworld, self, self.options)
         self.set_completion_rule(CanReachLocation("Absolution Ace Completion"))
 
@@ -101,4 +111,11 @@ class NeonWhiteWorld(World):
                 get_required_rank_for_mission(self.rank_requirement, i + 1, self.mission_count)
                     for i in range(self.mission_count)
             ]
+        }
+
+    def interpret_slot_data(self, slot_data: dict[str, Any]) -> dict[str, Any]:
+        reverse = {v: k for k, v in neon_white_level_name_internal.items()}
+        return {
+            "levels": [reverse[x] for x in slot_data["level_order"]],
+            "options": self.options.as_dict("rank_requirement", "mission_count")
         }
